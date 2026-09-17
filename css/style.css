@@ -602,6 +602,7 @@ h2 em { font-style: italic; color: var(--teal); }
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; min-height: 0; }
   .hero-text { padding-top: 7rem; padding-bottom: 3rem; }
+  .tagline { white-space: normal; }   /* one line on desktop, wraps on small screens */
   .scroll-cue { position: static; margin-top: 3rem; }
   .hero-art { justify-content: center; padding: 0 1.2rem 3rem; }
   .print-frame {
