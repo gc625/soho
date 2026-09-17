@@ -37,8 +37,12 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 88px;
 }
+
+/* Anchor jumps land clear of the fixed nav; the listings section pins to
+   the very top of the viewport so no sliver of the section above shows. */
+#about, #contact, #viewer { scroll-margin-top: 84px; }
+#listings { scroll-margin-top: 0; }
 
 body {
   margin: 0;
@@ -67,7 +71,7 @@ a { color: inherit; }
   top: 0; bottom: 0;
   left: calc(-1 * var(--ribbon-w));
   width: var(--ribbon-w);
-  background: url('../assets/ribbon.jpg') repeat-y;
+  background: url('../assets/tile-woven.jpg') repeat-y;   /* js/main.js rotates the three tile prints each visit */
   background-size: 100% auto;
   opacity: .34;
   mix-blend-mode: multiply;
@@ -283,6 +287,8 @@ h2 em { font-style: italic; color: var(--teal); }
   position: relative;
   z-index: 2;
 }
+.section-head { margin-bottom: clamp(2.6rem, 6vh, 4rem); }
+.section-head h2 { margin-bottom: 0; }
 /* Listing viewer */
 .viewer { transition: opacity .24s ease; }
 .viewer.swap { opacity: 0; }
@@ -312,12 +318,12 @@ h2 em { font-style: italic; color: var(--teal); }
   mix-blend-mode: multiply;
 }
 .viewer-head, .viewer-body { position: relative; z-index: 1; }
-.viewer-head { margin-bottom: 1.4rem; }
+.viewer-head { margin-bottom: 1.5rem; }
 .viewer-title-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: .4rem 1.4rem;
+  gap: .55rem 1.4rem;
 }
 .viewer-title-row h3 {
   font-size: clamp(2.1rem, 3.6vw, 3rem);
@@ -383,7 +389,7 @@ h2 em { font-style: italic; color: var(--teal); }
   letter-spacing: .26em;
   text-transform: uppercase;
   color: var(--rust);
-  margin: 0 0 .9rem;
+  margin: 0 0 .7rem;
 }
 .featured h3, .modal-text h3 {
   font-size: clamp(1.9rem, 3.2vw, 2.7rem);
@@ -396,7 +402,7 @@ h2 em { font-style: italic; color: var(--teal); }
   flex-wrap: wrap;
   gap: .5rem;
   padding: 0;
-  margin: 0 0 1.5rem;
+  margin: 1.1rem 0 0;
 }
 .chips li {
   font-family: var(--font-label);
@@ -600,16 +606,34 @@ h2 em { font-style: italic; color: var(--teal); }
 }
 
 @media (max-width: 860px) {
-  .hero { grid-template-columns: 1fr; min-height: 0; }
-  .hero-text { padding-top: 7rem; padding-bottom: 3rem; }
+  /* Hero: tighter to the header, and the print is pulled up behind the
+     tagline, dissolving in from its top edge instead of its left. */
+  .hero { grid-template-columns: 1fr; min-height: 0; padding-bottom: 5vh; }
+  .hero-text { padding-top: 5rem; padding-bottom: 0; z-index: 2; }
   .tagline { white-space: normal; }   /* one line on desktop, wraps on small screens */
-  .scroll-cue { position: static; margin-top: 3rem; }
-  .hero-art { justify-content: center; padding: 0 1.2rem 3rem; }
+  .scroll-cue {
+    position: relative;
+    left: auto; bottom: auto;
+    margin-top: 1.5rem;
+    align-self: flex-start;
+    background: var(--paper);         /* sits on top of the risen print */
+    border: 1px solid var(--line-soft);
+    border-radius: 999px;
+    padding: .5rem .95rem;
+    box-shadow: 0 1px 0 var(--line-soft);
+  }
+  .hero-art {
+    justify-content: center;
+    padding: 0 1.2rem;
+    margin-top: -2.6rem;              /* the art rises behind the tagline */
+    position: relative;
+    z-index: 1;
+  }
   .print-frame {
     height: auto;
-    width: min(100%, 62vh);
-    -webkit-mask-image: none;
-    mask-image: none;
+    width: min(100%, 60vh);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 16%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 16%);
   }
   /* the about photo becomes an inline figure after the text on small screens */
   .about-photo {
@@ -618,15 +642,52 @@ h2 em { font-style: italic; color: var(--teal); }
     width: min(100%, 420px);
     margin: 2.4rem auto 0;
   }
-  .viewer-gallery { grid-template-columns: repeat(2, 1fr); }
+
+  /* Listing viewer: arrows above the name, a swipeable photo strip above
+     the description, and the map as a faint backdrop behind the title. */
+  .viewer { display: flex; flex-direction: column; position: relative; }
+  .viewer-prose { display: contents; }
+  .viewer-head { order: 1; display: flex; flex-direction: column; }
+  .viewer-title-row { display: contents; }
+  .viewer-nav { order: -1; margin: 0 0 1.2rem; }
+  .vnav-btn { width: 2.6rem; height: 2.6rem; }
+  .viewer-body { order: 3; }
+  .viewer-gallery {
+    order: 2;
+    display: flex;
+    gap: 10px;
+    margin: 0 calc(-1 * clamp(1.6rem, 6vw, 6rem)) 1.8rem;
+    padding: 0 clamp(1.6rem, 6vw, 6rem);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .viewer-gallery::-webkit-scrollbar { display: none; }
+  .gallery-item { flex: 0 0 86%; scroll-snap-align: center; }
+  .viewer-map {
+    position: absolute;
+    top: -2.2rem; bottom: auto;
+    left: calc(-1 * clamp(1.6rem, 6vw, 6rem));
+    right: calc(-1 * clamp(1.6rem, 6vw, 6rem));
+    margin-top: 0;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 68%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 68%, transparent 100%);
+  }
+  .viewer-map.on { opacity: .4; }
+  .viewer-map iframe {
+    position: static;
+    transform: none;
+    width: 100%;
+    border: 0;
+  }
 }
 
 @media (max-width: 520px) {
-  .viewer-gallery { grid-template-columns: 1fr; }
-  .nav { padding-left: 1.1rem; padding-right: 1.1rem; }
-  .nav-links { gap: .85rem; }
-  .nav-links a { font-size: .62rem; letter-spacing: .16em; }
+  /* the brand and the links wrap onto two lines instead of colliding */
+  .nav { flex-wrap: wrap; row-gap: .1rem; padding: .75rem 1.1rem; }
   .nav-brand { font-size: 1.05rem; }
+  .nav-links { gap: 1.1rem; margin-left: auto; }
+  .nav-links a { font-size: .62rem; letter-spacing: .16em; }
 }
 
 /* ------------------------------------------------------------

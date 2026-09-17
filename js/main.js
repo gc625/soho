@@ -81,6 +81,25 @@ const photoSrc = (listing, n) =>
   `listings/${listing.folder}/${String(n).padStart(2, '0')}.jpg`;
 
 /* ------------------------------------------------------------
+   The selvedge: cycle through the three salvaged-tile prints,
+   so each visit presses a different margin. Starts at random,
+   then rotates so consecutive visits never repeat.
+   ------------------------------------------------------------ */
+const RIBBON_TILES = [
+  'assets/tile-woven.jpg',
+  'assets/tile-floral.jpg',
+  'assets/tile-square.jpg'
+];
+try {
+  const last = localStorage.getItem('spp-ribbon');
+  const idx = last === null
+    ? Math.floor(Math.random() * RIBBON_TILES.length)
+    : (Number(last) + 1) % RIBBON_TILES.length;
+  localStorage.setItem('spp-ribbon', String(idx));
+  document.querySelector('.ribbon').style.backgroundImage = `url('${RIBBON_TILES[idx]}')`;
+} catch { /* storage unavailable — keep the default woven ribbon */ }
+
+/* ------------------------------------------------------------
    Scroll reveals
    ------------------------------------------------------------ */
 const io = new IntersectionObserver(entries => {
