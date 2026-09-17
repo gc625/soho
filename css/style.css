@@ -1,0 +1,639 @@
+/* ============================================================
+   Soho Printing Press — style sheet
+   A letterpress-inspired sheet: paper, ink, and salvaged tile.
+   ============================================================ */
+
+@font-face {
+  font-family: 'Michelle';
+  src: url('../fonts/michelle_2/Michelle.otf') format('opentype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Michelle Outline';
+  src: url('../fonts/michelle_2/Michelle%20Outline.otf') format('opentype');
+  font-display: swap;
+}
+
+:root {
+  --paper:      #f5f3ea;
+  --paper-deep: #edeade;
+  --ink:        #2b2921;
+  --ink-soft:   #5c5847;
+  --sage:       #6c8071;
+  --teal:       #41625c;
+  --blue:       #8ea0b4;
+  --cream:      #e4d5b2;
+  --rust:       #9c5b4f;
+  --line:       rgba(43, 41, 33, .22);
+  --line-soft:  rgba(43, 41, 33, .12);
+  --ribbon-w:   92px;
+  --font-display: 'Michelle', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-outline: 'Michelle Outline', 'Michelle', Georgia, serif;
+  --font-body:    'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  --font-label:   'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.65;
+  padding-left: var(--ribbon-w);          /* make room for the printed selvedge */
+  overflow-x: hidden;
+}
+
+main { position: relative; }
+
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+
+::selection { background: var(--sage); color: var(--paper); }
+
+/* ------------------------------------------------------------
+   The selvedge: woven tiles repeating down the left margin,
+   blended into the paper like a printer's registration edge.
+   ------------------------------------------------------------ */
+.ribbon {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: calc(-1 * var(--ribbon-w));
+  width: var(--ribbon-w);
+  background: url('../assets/ribbon.jpg') repeat-y;
+  background-size: 100% auto;
+  opacity: .34;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 1;
+}
+.ribbon::after {                            /* a hairline separating selvedge from sheet */
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: 1px;
+  background: var(--line);
+}
+
+/* ------------------------------------------------------------
+   Navigation
+   ------------------------------------------------------------ */
+.nav {
+  position: fixed;
+  top: 0; left: var(--ribbon-w); right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem clamp(1.4rem, 4vw, 3.2rem);
+  transition: background .35s ease, box-shadow .35s ease, padding .35s ease, transform .4s cubic-bezier(.2, .7, .2, 1);
+}
+.nav.hidden {
+  transform: translateY(-110%);
+}
+.nav.scrolled {
+  background: rgba(245, 243, 234, .92);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 1px 0 var(--line-soft);
+  padding-top: .7rem;
+  padding-bottom: .7rem;
+}
+.nav-brand {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  text-decoration: none;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: clamp(1.2rem, 3vw, 2.6rem); }
+.nav-links a {
+  font-family: var(--font-label);
+  font-size: .72rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ink-soft);
+  position: relative;
+  padding-bottom: 3px;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%; height: 1px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform .3s ease;
+}
+.nav-links a:hover::after { transform: scaleX(1); transform-origin: left; }
+
+/* ------------------------------------------------------------
+   Shared type
+   ------------------------------------------------------------ */
+.eyebrow {
+  font-family: var(--font-label);
+  font-size: .72rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin: 0 0 1.2rem;
+}
+.eyebrow-light { color: var(--cream); }
+
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; }
+
+h2 {
+  font-size: clamp(2.1rem, 4.4vw, 3.4rem);
+  line-height: 1.08;
+  margin-bottom: 1.6rem;
+}
+h2 em { font-style: italic; color: var(--teal); }
+
+/* ------------------------------------------------------------
+   Hero — name on the left, the living print on the right
+   ------------------------------------------------------------ */
+.hero {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  position: relative;
+  z-index: 2;
+  /* paper buffer below the print, so jumping to #about doesn't flash art */
+  padding-bottom: 10vh;
+}
+.hero-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(5rem, 10vh, 8rem) clamp(1.6rem, 4.5vw, 5rem) clamp(5rem, 12vh, 8rem);
+  position: relative;
+}
+.hero-text h1 { line-height: .98; }
+.h1-solid {
+  display: block;
+  font-size: clamp(3.4rem, 7.2vw, 6.4rem);
+  letter-spacing: .01em;
+}
+.h1-outline {
+  display: block;
+  font-family: var(--font-outline);
+  font-size: clamp(2.6rem, 5.4vw, 4.9rem);
+  margin-top: .35rem;
+}
+.tagline {
+  font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 1.8rem 0 0;
+  white-space: nowrap;
+}
+
+.scroll-cue {
+  position: absolute;
+  left: clamp(1.6rem, 4.5vw, 5rem);
+  bottom: clamp(1.6rem, 5vh, 3rem);
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  text-decoration: none;
+  font-family: var(--font-label);
+  font-size: .68rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.cue-line {
+  width: 54px; height: 1px;
+  background: var(--ink-soft);
+  position: relative;
+  overflow: hidden;
+}
+.cue-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  animation: cue 2.2s cubic-bezier(.65, 0, .35, 1) infinite;
+}
+@keyframes cue {
+  0%   { transform: translateX(-100%); }
+  55%  { transform: translateX(0); }
+  100% { transform: translateX(102%); }
+}
+
+/* The living print sits directly on the sheet, unframed,
+   dissolving into the page along its left edge. */
+.hero-art {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+.print-frame {
+  position: relative;
+  height: 100vh;
+  aspect-ratio: 983 / 1305;
+  max-width: 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 25%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 25%);
+}
+.print-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* ------------------------------------------------------------
+   About
+   ------------------------------------------------------------ */
+.about {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(7.5rem, 17vh, 11.5rem) clamp(1.6rem, 6vw, 6rem);
+  z-index: 2;
+}
+.about-photo {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(38vw, 520px);
+  aspect-ratio: 508 / 695;
+  background: url('../assets/salvaging-tiles.jpg') center / cover;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.about-inner { max-width: 620px; position: relative; }
+.about-inner p { margin: 0 0 1.3rem; color: var(--ink-soft); }
+.about-inner p strong { color: var(--ink); }
+
+/* ------------------------------------------------------------
+   Listings
+   ------------------------------------------------------------ */
+.listings {
+  padding: clamp(7.5rem, 17vh, 11.5rem) clamp(1.6rem, 6vw, 6rem);
+  position: relative;
+  z-index: 2;
+}
+/* Listing viewer */
+.viewer { transition: opacity .24s ease; }
+.viewer.swap { opacity: 0; }
+
+.viewer-prose { position: relative; }
+
+/* The illustrated map lives on the same layer as the text,
+   dissolved into the paper to the right of the description. */
+.viewer-map {
+  position: absolute;
+  top: -3rem; bottom: -2rem;
+  left: 47%; right: -2.5rem;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 22%);
+}
+.viewer-map.on { opacity: .55; }
+.viewer-map iframe {
+  position: absolute;
+  top: 46%; left: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  aspect-ratio: 1983 / 1248;
+  border: 0;
+  mix-blend-mode: multiply;
+}
+.viewer-head, .viewer-body { position: relative; z-index: 1; }
+.viewer-head { margin-bottom: 1.4rem; }
+.viewer-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem 1.4rem;
+}
+.viewer-title-row h3 {
+  font-size: clamp(2.1rem, 3.6vw, 3rem);
+  line-height: 1.08;
+}
+.viewer-nav { display: flex; align-items: center; gap: .7rem; }
+.vnav-btn {
+  width: 2.35rem; height: 2.35rem;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color .25s ease, border-color .25s ease, transform .25s ease;
+}
+.vnav-btn:hover { color: var(--ink); border-color: var(--ink); transform: scale(1.08); }
+.viewer-pos {
+  font-family: var(--font-label);
+  font-size: .68rem;
+  letter-spacing: .22em;
+  color: var(--ink-soft);
+  min-width: 3.2em;
+  text-align: center;
+}
+.viewer-body { max-width: 600px; }
+.viewer-body p { color: var(--ink-soft); margin: 0; }
+
+.viewer-gallery {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: clamp(2.2rem, 5vh, 3.4rem);
+}
+
+/* "See all listings" divider */
+.see-all {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  margin: clamp(4.5rem, 10vh, 6.5rem) 0 clamp(2rem, 4vh, 2.8rem);
+}
+.see-all::before, .see-all::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.see-all span {
+  font-family: var(--font-label);
+  font-size: .72rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.l-num {
+  font-family: var(--font-label);
+  font-size: .72rem;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin: 0 0 .9rem;
+}
+.featured h3, .modal-text h3 {
+  font-size: clamp(1.9rem, 3.2vw, 2.7rem);
+  line-height: 1.1;
+  margin-bottom: 1.1rem;
+}
+.chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+.chips li {
+  font-family: var(--font-label);
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--teal);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: .34rem .85rem;
+}
+
+.gallery-item {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  cursor: zoom-in;
+  padding: 0;
+  background: var(--paper-deep);
+}
+.gallery-item img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform .6s cubic-bezier(.2, .6, .2, 1);
+}
+.gallery-item:hover img { transform: scale(1.045); }
+
+/* Cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: clamp(.9rem, 1.6vw, 1.4rem);
+}
+.card {
+  text-align: left;
+  border: 1px solid var(--line-soft);
+  background: var(--paper);
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(43, 41, 33, .16);
+  border-color: var(--line);
+}
+.card-img { display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--paper-deep); }
+.card-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform .6s cubic-bezier(.2, .6, .2, 1);
+}
+.card:hover .card-img img { transform: scale(1.05); }
+.card-body { display: block; padding: .85rem .95rem 1.05rem; }
+.card-num {
+  display: block;
+  font-family: var(--font-label);
+  font-size: .64rem;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--rust);
+}
+.card-name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.18rem;
+  line-height: 1.15;
+  margin: .3rem 0 .35rem;
+}
+.card-specs { display: block; font-size: .78rem; color: var(--ink-soft); font-style: italic; }
+
+/* ------------------------------------------------------------
+   Footer
+   ------------------------------------------------------------ */
+.footer {
+  position: relative;
+  z-index: 2;
+  margin-left: calc(-1 * var(--ribbon-w));   /* full-bleed past the selvedge */
+}
+.footer-inner {
+  position: relative;
+  overflow: hidden;
+  background: #595d59 url('../assets/footer-green.jpg') center / cover;
+  color: var(--paper);
+  text-align: center;
+  padding: clamp(4rem, 10vh, 7rem) clamp(1.6rem, 6vw, 6rem) 2.4rem;
+}
+
+.footer-inner h2 { color: var(--paper); margin-bottom: .6rem; }
+.footer-tag { color: rgba(245, 243, 234, .72); font-style: italic; margin: 0 0 2.2rem; }
+.footer-contact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem clamp(2rem, 5vw, 4rem);
+  margin-bottom: 2.6rem;
+}
+.footer-contact a {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2.6vw, 1.8rem);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(245, 243, 234, .35);
+  padding-bottom: .2rem;
+  transition: border-color .3s ease, color .3s ease;
+}
+.footer-contact a:hover { color: var(--cream); border-color: var(--cream); }
+.footer-addr {
+  font-family: var(--font-label);
+  font-size: .72rem;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: rgba(245, 243, 234, .62);
+  margin: 0 0 3rem;
+}
+.copyright {
+  font-size: .8rem;
+  color: rgba(245, 243, 234, .55);
+  margin: 0;
+}
+
+/* ------------------------------------------------------------
+   Lightbox
+   ------------------------------------------------------------ */
+.lightbox {
+  position: fixed; inset: 0;
+  z-index: 120;
+  background: rgba(22, 21, 16, .93);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox.open { display: flex; }
+.lightbox img {
+  max-width: 88vw;
+  max-height: 84vh;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+}
+.lb-close, .lb-prev, .lb-next {
+  position: absolute;
+  background: none;
+  border: none;
+  color: rgba(245, 243, 234, .75);
+  cursor: pointer;
+  transition: color .25s ease;
+}
+.lb-close:hover, .lb-prev:hover, .lb-next:hover { color: #fff; }
+.lb-close { top: 1.2rem; right: 1.6rem; font-size: 2.4rem; }
+.lb-prev, .lb-next { top: 50%; transform: translateY(-50%); font-size: 3rem; padding: 1rem; }
+.lb-prev { left: 1rem; }
+.lb-next { right: 1rem; }
+.lb-count {
+  position: absolute;
+  bottom: 1.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-label);
+  font-size: .72rem;
+  letter-spacing: .3em;
+  color: rgba(245, 243, 234, .65);
+  margin: 0;
+}
+
+/* ------------------------------------------------------------
+   Scroll reveals
+   ------------------------------------------------------------ */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity .8s ease, transform .8s cubic-bezier(.2, .65, .2, 1);
+}
+.reveal.in { opacity: 1; transform: none; }
+
+/* ------------------------------------------------------------
+   Responsive
+   ------------------------------------------------------------ */
+@media (max-width: 1000px) {
+  /* the map drops below the description as a simple block on small screens */
+  .viewer-map {
+    position: relative;
+    inset: auto;
+    margin-top: 2rem;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .viewer-map.on { opacity: 1; }
+  .viewer-map iframe {
+    position: static;
+    transform: none;
+    width: 100%;
+    border: 1px solid var(--line-soft);
+  }
+}
+
+@media (max-width: 1000px) {
+  :root { --ribbon-w: 0px; }   /* selvedge folds away on small screens */
+  .ribbon { display: none; }
+  .nav { left: 0; }
+}
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; min-height: 0; }
+  .hero-text { padding-top: 7rem; padding-bottom: 3rem; }
+  .scroll-cue { position: static; margin-top: 3rem; }
+  .hero-art { justify-content: center; padding: 0 1.2rem 3rem; }
+  .print-frame {
+    height: auto;
+    width: min(100%, 62vh);
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  /* the about photo becomes an inline figure after the text on small screens */
+  .about-photo {
+    position: static;
+    transform: none;
+    width: min(100%, 420px);
+    margin: 2.4rem auto 0;
+  }
+  .viewer-gallery { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 520px) {
+  .viewer-gallery { grid-template-columns: 1fr; }
+  .nav { padding-left: 1.1rem; padding-right: 1.1rem; }
+  .nav-links { gap: .85rem; }
+  .nav-links a { font-size: .62rem; letter-spacing: .16em; }
+  .nav-brand { font-size: 1.05rem; }
+}
+
+/* ------------------------------------------------------------
+   Reduced motion
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .cue-line::after { animation: none; }
+  .gallery-item img, .card-img img { transition: none; }
+}

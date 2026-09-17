@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soho Printing Press — Classic Hong Kong Properties</title>
+<meta name="description" content="Soho Printing Press is a portfolio of classic Hong Kong Tong Lau and shop house properties, restored for a modern lifestyle.">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <a class="nav-brand" href="#top">Soho Printing Press</a>
+  <nav class="nav-links" aria-label="Sections">
+    <a href="#about">About</a>
+    <a href="#listings">Listings</a>
+    <a href="#contact">Contact</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- Printed selvedge: a woven-tile ribbon down the margin; stops at the footer -->
+  <div class="ribbon" aria-hidden="true"></div>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-text">
+      <h1>
+        <span class="h1-solid">Soho</span>
+        <span class="h1-outline">Printing&nbsp;Press</span>
+      </h1>
+      <p class="tagline">Classic Hong Kong properties for a modern lifestyle.</p>
+      <a class="scroll-cue" href="#about" aria-label="Scroll down to learn more">
+        <span>Scroll</span>
+        <i class="cue-line" aria-hidden="true"></i>
+      </a>
+    </div>
+    <div class="hero-art">
+      <div class="print-frame">
+        <iframe id="hero-print" src="art/gage-street-living-print-fast.html"
+                title="Gage Street — a living print" scrolling="no" tabindex="-1"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ABOUT ============ -->
+  <section class="about" id="about">
+    <div class="about-inner">
+      <p class="eyebrow reveal">About Us</p>
+      <h2 class="reveal">Old buildings,<br><em>carefully re-inked.</em></h2>
+      <p class="reveal">Soho Printing Press is a small portfolio of classic Hong Kong homes — Tong Lau
+        apartments and old shop houses — strung along the Central&ndash;Mid-Levels escalator, from
+        Po Yan Street in Sheung Wan to Gage Street in the heart of Central.</p>
+      <p class="reveal">Every building is restored the same way: keep as much of the original character
+        as possible — salvaged tiles, exposed brick, worn timber — while quietly upgrading everything
+        underneath to the standards of a modern lifestyle.</p>
+    </div>
+    <div class="about-photo" aria-hidden="true"></div>
+  </section>
+
+  <!-- ============ LISTINGS ============ -->
+  <section class="listings" id="listings">
+
+    <!-- Listing viewer: cycle through the portfolio with the arrows -->
+    <article class="viewer" id="viewer">
+      <div class="viewer-prose">
+        <header class="viewer-head reveal">
+          <p class="l-num" id="viewer-num">Nº 01</p>
+          <div class="viewer-title-row">
+            <h3 id="viewer-name">Staunton &amp; Aberdeen</h3>
+            <div class="viewer-nav">
+              <button class="vnav-btn" id="vprev" type="button" aria-label="Previous listing">&#8249;</button>
+              <span class="viewer-pos" id="viewer-pos">1 / 9</span>
+              <button class="vnav-btn" id="vnext" type="button" aria-label="Next listing">&#8250;</button>
+            </div>
+          </div>
+          <ul class="chips" id="viewer-chips"></ul>
+        </header>
+        <div class="viewer-body reveal">
+          <p id="viewer-desc"></p>
+        </div>
+        <!-- Illustrated map dissolves in beside the description; one per listing, as they are drawn -->
+        <div class="viewer-map" id="viewer-map" aria-hidden="true">
+          <iframe id="map-iframe" loading="lazy" src="art/maps/staunton-street-listing-map.html"
+                  title="Illustrated location map" scrolling="no" tabindex="-1"></iframe>
+        </div>
+      </div>
+      <div class="viewer-gallery" id="viewer-gallery" aria-label="Photo gallery"></div>
+    </article>
+
+    <div class="see-all" id="see-all"><span>See all listings</span></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer" id="contact">
+  <div class="footer-inner">
+    <p class="eyebrow eyebrow-light reveal">Get in touch</p>
+    <h2 class="reveal">Contact Us</h2>
+    <p class="footer-tag reveal">Interested in a viewing, or just want to talk old buildings?</p>
+    <div class="footer-contact reveal">
+      <a href="mailto:hello@sohoprintingpress.hk">hello@sohoprintingpress.hk</a>
+      <a href="tel:+85291234567">+852 9123 4567</a>
+    </div>
+    <p class="footer-addr reveal">Tank Lane Shop House &middot; Soho &middot; Hong Kong</p>
+    <p class="copyright">&copy; <span id="year">2025</span> Soho Printing Press. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- ============ LIGHTBOX ============ -->
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="lb-close" type="button" data-lb-close aria-label="Close">&times;</button>
+  <button class="lb-prev" type="button" aria-label="Previous photo">&#8249;</button>
+  <img id="lb-img" alt="">
+  <button class="lb-next" type="button" aria-label="Next photo">&#8250;</button>
+  <p class="lb-count" id="lb-count"></p>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

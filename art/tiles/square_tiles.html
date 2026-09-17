@@ -1,0 +1,64 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Tile print</title><style>html,body{margin:0;background:#f5f2e9}canvas{display:block;width:100%;height:auto;max-width:1500px;margin:auto}</style></head><body><canvas id="print" width="1500" height="1875"></canvas><script>
+// Four independently printed plates; all coordinates derive from the source tile lattice.
+// No image assets or dependencies. Fixed seed makes the output reproducible.
+'use strict';
+const W=1500,H=1875,S=W/400,seed=231917;
+const canvas=document.getElementById('print'),ctx=canvas.getContext('2d');
+function hash(x,y,s=0){let v=Math.imul(x+seed+s,374761393)^Math.imul(y+17,668265263);v=Math.imul(v^(v>>>13),1274126177);return ((v^(v>>>16))>>>0)/4294967295}
+function noise(x,y,scale,s){x/=scale;y/=scale;let a=Math.floor(x),b=Math.floor(y),u=x-a,v=y-b;u=u*u*(3-2*u);v=v*v*(3-2*v);return (hash(a,b,s)*(1-u)+hash(a+1,b,s)*u)*(1-v)+(hash(a,b+1,s)*(1-u)+hash(a+1,b+1,s)*u)*v}
+const paper=new Float32Array(W*H),out=ctx.createImageData(W,H);
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){let i=y*W+x;let weave=(Math.sin(x*2.1)+Math.sin(y*2.22))*.65;let p=(hash(x,y,52)-.5)*5+weave+(noise(x,y,24,2)-.5)*3;paper[i]=p;[246,243,234].forEach((c,k)=>out.data[i*4+k]=c+p);out.data[i*4+3]=255;}
+ctx.putImageData(out,0,0);
+const plates=Array.from({length:4},()=>{let c=document.createElement('canvas');c.width=W;c.height=H;return c});
+const pc=plates.map(c=>c.getContext('2d'));pc.forEach(c=>{c.scale(S,S);c.fillStyle='#fff';c.strokeStyle='#fff';c.lineJoin='round';c.lineCap='round'});
+// Mild camera skew retained; the reference has a nearly orthogonal pavement view.
+function project(x,y){return [x+0.007*y, y-0.004*x]}
+function path(c,pts,close=true){c.beginPath();pts.forEach((p,j)=>{let q=project(...p);j?c.lineTo(...q):c.moveTo(...q)});if(close)c.closePath()}
+function shape(c,pts){path(c,pts);c.fill()}
+function line(pts,width){pc[3].lineWidth=width;path(pc[3],pts,false);pc[3].stroke()}
+for(let r=-1;r<11;r++)for(let col=-1;col<9;col++){
+let x=43+col*51.8,y=17+r*51.45;let green=((r+col)%2+2)%2===0;
+let h=17.1,a=34.7,b=17.1;
+let pts=green?[[x-h,y-h],[x+h,y-h],[x+h,y+h],[x-h,y+h]]:[[x-b,y-a],[x+b,y-a],[x+a,y-b],[x+a,y+b],[x+b,y+a],[x-b,y+a],[x-a,y+b],[x-a,y-b]];
+if(green){
+// Sage and teal are separate inks, with selected overlaps, as in hand-mixed tiles.
+let teal=(noise(x,y,145,80)>.49);
+shape(pc[teal?2:1],pts);
+if(hash(col,r,112)>.73){let c=pc[teal?1:2];c.globalAlpha=.22;shape(c,pts);c.globalAlpha=1;}
+}else{pc[0].globalAlpha=.24+hash(col,r,15)*.28;shape(pc[0],pts);pc[0].globalAlpha=1;}
+// Outline and the four component tiles in each motif, including the small inserts.
+line([...pts,pts[0]],.85);
+let radius=green?h:a;
+line([[x-radius,y],[x+radius,y]],.83);line([[x,y-radius],[x,y+radius]],.83);
+}
+// Each mask is resampled with local edge displacement, printed through pressure,
+// dry-transfer, roller, paper tooth and individual pinhole fields, then multiplied.
+const colors=[[195,173,148],[91,117,83],[64,105,98],[99,87,66]];
+const offsets=[[.3,-.4],[-1.4,.8],[1.5,-.6],[0,0]];
+for(let p=0;p<4;p++){
+const mask=pc[p].getImageData(0,0,W,H).data;let ink=ctx.createImageData(W,H),d=ink.data;
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+let i=y*W+x,warpX=(noise(x,y,23,201+p)-.5)*2.8,warpY=(noise(x,y,29,211+p)-.5)*2.8;
+let sx=Math.max(0,Math.min(W-1,Math.round(x-offsets[p][0]+warpX))),sy=Math.max(0,Math.min(H-1,Math.round(y-offsets[p][1]+warpY)));
+let m=mask[(sy*W+sx)*4+3]/255;
+if(!m)continue;
+let pressure=noise(x,y,220,300+p),dry=noise(x,y,17,400+p),small=noise(x,y,4.4,450+p),roller=noise(x*.12,y,22,500+p);
+let coverage=.82+.24*(pressure-.5)+.10*(roller-.5)+.18*(dry-.5)+.20*(small-.5);
+// Sparse correlated dry patches; no large white damage areas.
+coverage-=Math.max(0,.30-dry)*.48;
+let fleck=hash(x,y,610+p),tooth=paper[i];
+coverage+=(tooth/12)*.18;
+if(fleck<.023+Math.max(0,.40-dry)*.09)coverage*=.12;
+else if(fleck<.17)coverage*=.66;
+coverage*=p===3?.88:1;
+let alpha=Math.max(0,Math.min(.96,coverage))*m;
+d[i*4]=colors[p][0];d[i*4+1]=colors[p][1];d[i*4+2]=colors[p][2];d[i*4+3]=Math.round(alpha*255);
+}
+let plate=document.createElement('canvas');plate.width=W;plate.height=H;plate.getContext('2d').putImageData(ink,0,0);
+ctx.globalCompositeOperation='multiply';ctx.drawImage(plate,0,0);
+}
+// Thin paper fibres remain visible within and between inks.
+ctx.globalCompositeOperation='multiply';ctx.strokeStyle='rgba(120,108,84,0.075)';ctx.lineWidth=.55;
+for(let k=0;k<16000;k++){let x=hash(k,0,901)*W,y=hash(k,1,902)*H,len=1+hash(k,2,903)*5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+len*.35,y+len);ctx.stroke()}
+ctx.globalCompositeOperation='source-over';window.renderComplete=true;
+</script></body></html>

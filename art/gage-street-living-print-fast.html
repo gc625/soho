@@ -1,0 +1,63 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gage Street</title><style>html,body{margin:0;background:#f6f5ed}canvas{display:block;width:100%;max-width:1000px;height:auto;margin:auto}</style></head><body><script>/* Two-second one-time ink build; continuous twelve-second living print.
+   Cached artwork and cutouts keep every static ink grain fixed. */
+function createScene(make,images,W=1000){
+ const H=Math.round(W*1305/983),S=W/983,TAU=2*Math.PI,canvas=make(W,H),ctx=canvas.getContext('2d');
+ const base=make(W,H),bc=base.getContext('2d');bc.drawImage(images[5],0,0,W,H);
+ const clean=make(W,H),cc=clean.getContext('2d');cc.drawImage(base,0,0);
+ const people=[
+ {pts:[[620,1226],[625,1222],[634,1221],[638,1225],[636,1232],[643,1237],[646,1254],[644,1257],[639,1250],[640,1266],[643,1286],[639,1293],[635,1293],[635,1273],[631,1264],[628,1278],[626,1293],[621,1293],[622,1269],[620,1250],[615,1235]],cx:631,hip:1260,dx:2.4,dy:-1.1,ground:1294,clone:30},
+ {pts:[[766,1177],[773,1176],[777,1182],[774,1189],[781,1197],[779,1215],[775,1218],[777,1236],[774,1240],[770,1222],[766,1234],[763,1236],[762,1219],[761,1206],[757,1196],[758,1187]],cx:769,hip:1214,dx:-1.1,dy:-1.5,ground:1240,clone:30},
+ {pts:[[550,1166],[556,1166],[559,1172],[558,1178],[562,1185],[566,1192],[565,1198],[560,1195],[560,1206],[569,1219],[565,1223],[556,1211],[552,1223],[547,1225],[546,1221],[549,1208],[548,1196],[543,1187],[545,1178]],cx:554,hip:1200,dx:1.6,dy:.6,ground:1226,clone:30},
+ {pts:[[563,1234],[568,1231],[574,1234],[576,1240],[572,1245],[581,1252],[582,1260],[587,1267],[590,1282],[586,1287],[581,1283],[580,1305],[568,1305],[568,1281],[560,1305],[555,1305],[559,1278],[558,1260],[558,1249]],cx:570,hip:1275,dx:1.2,dy:1.0,ground:1305,clone:35}
+ ];
+ const path=(c,pts)=>{c.beginPath();pts.forEach((p,i)=>i?c.lineTo(p[0]*S,p[1]*S):c.moveTo(p[0]*S,p[1]*S));c.closePath();};
+ const sprites=people.map(p=>{const c=make(W,H),x=c.getContext('2d');path(x,p.pts);x.clip();x.drawImage(base,0,0);const patch=make(W,H),pc=patch.getContext('2d');pc.drawImage(base,-p.clone*S,0);const mask=make(W,H),mc=mask.getContext('2d');mc.fillStyle='#fff';mc.strokeStyle='#fff';mc.lineWidth=2*S;path(mc,p.pts);mc.fill();mc.stroke();pc.globalCompositeOperation='destination-in';pc.drawImage(mask,0,0);cc.drawImage(patch,0,0);return c;});
+ const smooth=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+ function still(){ctx.drawImage(base,0,0);}
+ function living(time,ramp=1){
+  const t=((time%12)+12)%12,phase=t/12;
+  ctx.drawImage(clean,0,0);
+  const left=Math.floor(280*S),right=Math.ceil(353*S),top=Math.ceil(231*S),bottom=Math.floor(1120*S),width=right-left;
+  for(let y=top;y<=bottom;y++){
+   let u=(y-top)/(bottom-top),e=Math.pow(Math.sin(Math.PI*u),.75)*ramp;
+   const a=TAU*(u*2.4-phase),secondary=TAU*(u*4.08-phase*2)+.8;
+   const dx=e*(4.59*S*Math.sin(a)+.79*S*Math.sin(secondary)),pinch=e*.82*S*Math.sin(a+.9);
+   const nl=left+dx+pinch,nr=right+dx-pinch;
+   if(nl>left)ctx.drawImage(base,left-5,y,4,1,left,y,nl-left+.6,1);
+   if(nr<right)ctx.drawImage(base,right+1,y,4,1,nr-.6,y,right-nr+.6,1);
+   ctx.drawImage(base,left,y,width,1,nl,y,nr-nl,1);
+  }
+  people.forEach((p,n)=>{
+   const sprite=sprites[n],a=TAU*phase+n*.85;
+   const travel=Math.sin(a)-Math.sin(n*.85),pace=TAU*6*phase+n*1.7;
+   const dx=p.dx*7*S*travel*ramp,dy=p.dy*7*S*travel*ramp;
+   const speed=Math.abs(Math.cos(a)),turn=Math.tanh(9*Math.cos(a));
+   const facing=1-ramp+ramp*turn;
+   const stride=Math.sin(pace)*smooth(speed/.30)*ramp;
+   const hip=p.hip*S,cx=p.cx*S,bob=-.55*S*(1-Math.cos(pace*2))*ramp*smooth(speed/.30);
+   ctx.save();ctx.translate(cx+dx,hip+dy+bob);ctx.scale(facing,1);
+   ctx.drawImage(sprite,0,0,W,hip,-cx,-hip,W,hip);
+   for(let side=0;side<2;side++){
+    const start=side?cx:0,width=side?W-cx:cx;
+    ctx.save();ctx.rotate((side?1:-1)*.13*stride*(n%2?-1:1));
+    ctx.drawImage(sprite,start,hip,width,H-hip,start-cx,0,width,H-hip);ctx.restore();
+   }
+   ctx.restore();
+  });
+ }
+ function draw(seconds){
+  const t=seconds*4.67;
+  if(seconds<1.5){
+   if(t<.35){ctx.drawImage(images[0],0,0,W,H);return;}
+   const progress=(t-.35)/1.33,index=Math.min(4,Math.floor(progress)),f=smooth(progress-index);
+   ctx.drawImage(images[index],0,0,W,H);
+   // Each colour is transferred in one steady press pass, top to bottom.
+   const y=Math.round(f*H);if(y>0){ctx.save();ctx.beginPath();ctx.rect(0,0,W,y);ctx.clip();ctx.drawImage(images[index+1],0,0,W,H);ctx.restore();}
+  }else living(seconds-1.5,smooth((seconds-1.5)/1.5));
+ }
+ return {canvas,draw,living,still};
+}
+
+const sources=["gage/plate-0.webp","gage/plate-1.webp","gage/plate-2.webp","gage/plate-3.webp","gage/plate-4.webp","gage/plate-5.webp"];
+const load=src=>new Promise((resolve,reject)=>{let im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src});
+(async()=>{const imgs=await Promise.all(sources.map(load));const make=(w,h)=>{let c=document.createElement('canvas');c.width=w;c.height=h;return c};const scene=createScene(make,imgs,1000);document.body.appendChild(scene.canvas);const reduced=matchMedia('(prefers-reduced-motion: reduce)');if(reduced.matches){scene.still();return;}let start=performance.now(),last=-1,pausedAt=0;function tick(now){let frame=Math.floor((now-start)/1000*30);if(frame!==last){scene.draw((now-start)/1000);last=frame;}requestAnimationFrame(tick);}document.addEventListener('visibilitychange',()=>{if(document.hidden)pausedAt=performance.now();else if(pausedAt){start+=performance.now()-pausedAt;pausedAt=0;}});requestAnimationFrame(tick);window.renderComplete=true;})();</script></body></html>
