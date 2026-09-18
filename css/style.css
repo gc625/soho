@@ -393,7 +393,7 @@ h2 em { font-style: italic; color: var(--teal); }
   top: 46%; left: 0;
   transform: translateY(-50%);
   width: 100%;
-  aspect-ratio: 1983 / 1248;
+  aspect-ratio: 1600 / 1000;
   border: 0;
   mix-blend-mode: multiply;
 }

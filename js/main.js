@@ -14,7 +14,7 @@ const LISTINGS = [
     name: 'Staunton & Aberdeen',
     specs: ['2 Bedroom', '2 Bathroom', 'Communal Roof'],
     map: 'art/maps/staunton-street-listing-map.html',
-    mapRatio: '1983 / 1248',
+    mapRatio: '1600 / 1000',
     desc: `When your travels next take you from Soho to PMQ along Staunton Street, take a moment to glance up at the 4/F of the Tong Lau that sits at the intersection of Aberdeen Street. You may notice a vast expanse of old style (but newly built) windows that extend across the front and sides of the building, giving front row views of PMQ and nothing but sky. This may be one of the biggest and sunniest Tong Lau homes available in Soho, with two king size en-suite bedrooms and walk-in closets. Gather your friends for dining and cocktails around the massive granite topped center counter, or go up to the roof to take in the city views.`
   },
   {
@@ -22,7 +22,7 @@ const LISTINGS = [
     name: 'Gage Street Market Lofts',
     specs: ['Seven 1 Bedroom', '1 Bathroom', '2 with Roofs'],
     map: 'art/maps/16-gage-street-listing-map.html',
-    mapRatio: '1370 / 759',
+    mapRatio: '1600 / 1000',
     desc: `From the escalator, as you cross Lyndhurst Terrace, look to the west and you will see the banner that identifies the building that is home to the seven flats we call Gage Street Market Lofts. You could not be closer to the escalator, the wet markets, your gym, the airport express and possibly even your office. These seven flats are all open kitchen and living area with a separate enclosed bedroom and bathroom area. All units in the building have been renovated and are now occupied by young professionals who enjoy being in the heart of Central.`
   },
   {
@@ -153,38 +153,65 @@ const mapIO = new IntersectionObserver(entries => {
 }, { threshold: 0.2 });
 mapIO.observe(mapLayer);
 
+/* Each illustrated map is a ~500 KB self-contained page (inline font +
+   canvas painting). Resetting iframe.src on every listing switch re-parses
+   and re-runs all of that on the main thread — the click jank. Instead,
+   parse each map at most once and keep the frames alive; switching
+   listings just toggles which one is visible. */
+const mapCache = new Map();
+const initialMapSrc = mapIframe.getAttribute('src');
+if (initialMapSrc) mapCache.set(initialMapSrc, mapIframe);
+
 function syncMap() {
   const L = LISTINGS[current];
   if (L.map) {
-    if (mapIframe.getAttribute('src') !== L.map) mapIframe.src = L.map;
-    mapIframe.style.aspectRatio = L.mapRatio || '1983 / 1248';
+    let frame = mapCache.get(L.map);
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.src = L.map;
+      frame.title = 'Illustrated location map';
+      frame.scrolling = 'no';
+      frame.tabIndex = -1;
+      frame.setAttribute('aria-hidden', 'true');
+      mapCache.set(L.map, frame);
+      mapLayer.appendChild(frame);
+    }
+    frame.style.aspectRatio = L.mapRatio || '1600 / 1000';
+    mapCache.forEach(f => { f.style.display = f === frame ? '' : 'none'; });
     if (mapRevealed) mapLayer.classList.add('on');
   } else {
     mapLayer.classList.remove('on');
   }
 }
 
+/* Galleries are built once per listing and the live nodes are reused on
+   every revisit — rebuilding fresh <img> nodes each switch would force
+   the browser to re-decode every photo mid-interaction. */
+const galleryCache = new Map();
 function buildGallery(listing) {
-  vGallery.innerHTML = '';
-  const frag = document.createDocumentFragment();
-  for (let i = 1; i <= listing.photos; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'gallery-item';
-    btn.type = 'button';
-    btn.setAttribute('aria-label', `View photo ${i} of ${listing.name}`);
-    const img = document.createElement('img');
-    img.src = photoSrc(listing, i);
-    img.alt = `${listing.name} — photo ${i}`;
-    /* Photos are ~30 KB each: eager loading + async decode keeps the
-       gallery painted before it scrolls into view — no pop-in. */
-    img.decoding = 'async';
-    img.width = 533;
-    img.height = 300;
-    btn.appendChild(img);
-    btn.addEventListener('click', () => openLightbox(listing, i - 1));
-    frag.appendChild(btn);
+  let nodes = galleryCache.get(listing.folder);
+  if (!nodes) {
+    nodes = [];
+    for (let i = 1; i <= listing.photos; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'gallery-item';
+      btn.type = 'button';
+      btn.setAttribute('aria-label', `View photo ${i} of ${listing.name}`);
+      const img = document.createElement('img');
+      img.src = photoSrc(listing, i);
+      img.alt = `${listing.name} — photo ${i}`;
+      /* Photos are ~30 KB each: eager loading + async decode keeps the
+         gallery painted before it scrolls into view — no pop-in. */
+      img.decoding = 'async';
+      img.width = 533;
+      img.height = 300;
+      btn.appendChild(img);
+      btn.addEventListener('click', () => openLightbox(listing, i - 1));
+      nodes.push(btn);
+    }
+    galleryCache.set(listing.folder, nodes);
   }
-  vGallery.appendChild(frag);
+  vGallery.replaceChildren(...nodes);
 }
 
 /* ------------------------------------------------------------
@@ -205,12 +232,18 @@ queueOrder();
 const ric = window.requestIdleCallback
   || (cb => setTimeout(() => cb({ timeRemaining: () => 0, didTimeout: false }), 40));
 function pumpPreload(deadline) {
-  /* Cover/photo 1 of each listing first — those are the cards. */
-  while (preloadQueue.length &&
+  /* Small batches per idle slice, and decode() each image explicitly —
+     decoding off the main thread now means no decode storm mid-click
+     when a gallery is inserted later. */
+  let n = 0;
+  while (preloadQueue.length && n < 3 &&
          (deadline.timeRemaining() > 8 || deadline.didTimeout)) {
     const { L, i } = preloadQueue.shift();
     const im = new Image();
+    im.decoding = 'async';
     im.src = photoSrc(L, i);
+    if (im.decode) im.decode().catch(() => {});
+    n++;
   }
   if (preloadQueue.length) ric(pumpPreload, { timeout: 1500 });
 }
