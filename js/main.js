@@ -87,11 +87,12 @@ const photoSrc = (listing, n) =>
    ------------------------------------------------------------ */
 /* Each pattern's sheet holds a different number of tiles across it — woven
    ~7, floral ~8, square ~4 — so each gets its own background-size that puts
-   roughly three tiles across the ribbon instead of the whole sheet. */
+   a readable number of tiles across the ribbon instead of the whole sheet.
+   The square motif reads as mush at three-across, so it runs two-across. */
 const RIBBON_TILES = [
   { src: 'assets/tile-woven.jpg',  size: '233% auto' },
   { src: 'assets/tile-floral.jpg', size: '267% auto' },
-  { src: 'assets/tile-square.jpg', size: '133% auto' }
+  { src: 'assets/tile-square.jpg', size: '200% auto' }
 ];
 try {
   const last = localStorage.getItem('spp-ribbon');
@@ -165,21 +166,55 @@ function syncMap() {
 
 function buildGallery(listing) {
   vGallery.innerHTML = '';
+  const frag = document.createDocumentFragment();
   for (let i = 1; i <= listing.photos; i++) {
     const btn = document.createElement('button');
-    btn.className = 'gallery-item reveal';
+    btn.className = 'gallery-item';
     btn.type = 'button';
     btn.setAttribute('aria-label', `View photo ${i} of ${listing.name}`);
     const img = document.createElement('img');
     img.src = photoSrc(listing, i);
     img.alt = `${listing.name} — photo ${i}`;
-    img.loading = 'lazy';
+    /* Photos are ~30 KB each: eager loading + async decode keeps the
+       gallery painted before it scrolls into view — no pop-in. */
+    img.decoding = 'async';
+    img.width = 533;
+    img.height = 300;
     btn.appendChild(img);
     btn.addEventListener('click', () => openLightbox(listing, i - 1));
-    vGallery.appendChild(btn);
+    frag.appendChild(btn);
   }
-  observeReveals(vGallery);
+  vGallery.appendChild(frag);
 }
+
+/* ------------------------------------------------------------
+   Photo preloading: the whole portfolio is ~2.3 MB of small JPEGs.
+   Once the page has loaded, stream them in during idle time —
+   nearest listings first — so cycling the viewer, scrolling to the
+   cards, and opening the lightbox are all instant.
+   ------------------------------------------------------------ */
+const preloadQueue = [];
+LISTINGS.forEach((L, idx) => {
+  for (let i = 1; i <= L.photos; i++) preloadQueue.push({ L, i, idx });
+});
+const queueOrder = () =>
+  preloadQueue.sort((a, b) =>
+    (Math.abs(a.idx - current) - Math.abs(b.idx - current)) || (a.i - b.i));
+queueOrder();
+
+const ric = window.requestIdleCallback
+  || (cb => setTimeout(() => cb({ timeRemaining: () => 0, didTimeout: false }), 40));
+function pumpPreload(deadline) {
+  /* Cover/photo 1 of each listing first — those are the cards. */
+  while (preloadQueue.length &&
+         (deadline.timeRemaining() > 8 || deadline.didTimeout)) {
+    const { L, i } = preloadQueue.shift();
+    const im = new Image();
+    im.src = photoSrc(L, i);
+  }
+  if (preloadQueue.length) ric(pumpPreload, { timeout: 1500 });
+}
+window.addEventListener('load', () => ric(pumpPreload, { timeout: 1500 }));
 
 function renderListing(idx, { scroll = false } = {}) {
   const next = (idx + LISTINGS.length) % LISTINGS.length;
@@ -192,6 +227,7 @@ function renderListing(idx, { scroll = false } = {}) {
     vDesc.textContent = L.desc;
     vPos.textContent = `${current + 1} / ${LISTINGS.length}`;
     buildGallery(L);
+    queueOrder();
     syncMap();
     viewer.classList.remove('swap');
   };
@@ -219,7 +255,7 @@ LISTINGS.forEach((listing, idx) => {
   card.style.transitionDelay = `${(idx % 5) * 60}ms`;
   card.setAttribute('aria-label', `View listing ${listing.name}`);
   card.innerHTML = `
-    <span class="card-img"><img src="${photoSrc(listing, 1)}" alt="${listing.name}" loading="lazy"></span>
+    <span class="card-img"><img src="${photoSrc(listing, 1)}" alt="${listing.name}" loading="lazy" decoding="async" width="533" height="300"></span>
     <span class="card-body">
       <span class="card-num">Nº ${num(idx)}</span>
       <span class="card-name">${listing.name}</span>
@@ -238,10 +274,21 @@ const lbCount = document.getElementById('lb-count');
 let lbListing = null;
 let lbIndex = 0;
 
+function preloadAround(listing, index) {
+  [1, -1, 2, -2].forEach(d => {
+    const n = index + 1 + d;
+    if (n >= 1 && n <= listing.photos) {
+      const im = new Image();
+      im.src = photoSrc(listing, n);
+    }
+  });
+}
+
 function openLightbox(listing, index) {
   lbListing = listing;
   lbIndex = index;
   updateLightbox();
+  preloadAround(listing, index);
   lightbox.classList.add('open');
   lightbox.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
@@ -256,6 +303,7 @@ function updateLightbox() {
 function stepLightbox(dir) {
   lbIndex = (lbIndex + dir + lbListing.photos) % lbListing.photos;
   updateLightbox();
+  preloadAround(lbListing, lbIndex);
 }
 
 function closeLightbox() {
@@ -317,6 +365,7 @@ const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
 let morphOn = false;
 let natSoho, natPress, natSolid;        // fly boxes at hero size
 let sohoLeft, sohoDocTop, pressLeft, pressDocTop;
+let brandSohoBox, brandPressBox;        // cached header landing boxes
 let morphStart = 0, morphEnd = 0, morphDist = 1;
 
 /* Measure once per layout change: the fly's natural boxes, the hero
@@ -344,7 +393,14 @@ function measureMorph() {
      the nav is scrolled away doesn't fold a negative value into the maths. */
   const wasHidden = nav.classList.contains('hidden');
   if (wasHidden) { nav.style.transition = 'none'; nav.classList.remove('hidden'); }
-  const brandTop = nbSoho.getBoundingClientRect().top;
+  /* Cache the landing boxes so the scroll handler never forces a
+     synchronous layout — the nav sits fixed at the top throughout the
+     morph, so these stay valid until the next resize. */
+  const bs = nbSoho.getBoundingClientRect();
+  const bp = nbPress.getBoundingClientRect();
+  brandSohoBox = { left: bs.left, top: bs.top, width: bs.width, height: bs.height };
+  brandPressBox = { left: bp.left, top: bp.top, width: bp.width, height: bp.height };
+  const brandTop = bs.top;
   if (wasHidden) {
     nav.classList.add('hidden');
     void nav.offsetHeight;
@@ -380,8 +436,8 @@ function updateMorph() {
   const pSohoPos = p;
   const pPressPos = clamp01((p - 0.4) / 0.6);
 
-  const tS = nbSoho.getBoundingClientRect();
-  const tP = nbPress.getBoundingClientRect();
+  const tS = brandSohoBox;
+  const tP = brandPressBox;
 
   place(tfSoho, sohoLeft, sohoDocTop - eff, natSoho.w, natSoho.h,
         tS.left, tS.top, tS.width, tS.height, p, pSohoPos);
@@ -423,7 +479,8 @@ if (!reduceMotion) {
 }
 
 let lastY = window.scrollY;
-window.addEventListener('scroll', () => {
+let scrollTicking = false;
+function onScroll() {
   const y = window.scrollY;
   nav.classList.toggle('scrolled', y > 30);
   /* Keep the header on screen until the title has fully landed in it. */
@@ -432,6 +489,15 @@ window.addEventListener('scroll', () => {
   else nav.classList.remove('hidden');
   if (morphOn) updateMorph(); else updateBrandFallback();
   lastY = y;
+}
+/* Coalesce scroll events into one update per frame. */
+window.addEventListener('scroll', () => {
+  if (scrollTicking) return;
+  scrollTicking = true;
+  requestAnimationFrame(() => {
+    scrollTicking = false;
+    onScroll();
+  });
 }, { passive: true });
 
 let morphResize;
