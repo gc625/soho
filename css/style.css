@@ -27,10 +27,10 @@
   --line:       rgba(43, 41, 33, .22);
   --line-soft:  rgba(43, 41, 33, .12);
   --ribbon-w:   92px;
-  --font-display: 'Michelle', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-display: 'Michelle', 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Songti SC', 'SimSun', 'Noto Serif CJK SC', serif;
   --font-outline: 'Michelle Outline', 'Michelle', Georgia, serif;
-  --font-body:    'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
-  --font-label:   'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-body:    'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, 'Songti SC', 'SimSun', 'Noto Serif CJK SC', serif;
+  --font-label:   'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -71,8 +71,10 @@ a { color: inherit; }
   top: 0; bottom: 0;
   left: calc(-1 * var(--ribbon-w));
   width: var(--ribbon-w);
-  background: url('../assets/tile-woven.jpg') repeat-y;   /* js/main.js rotates the three tile prints each visit */
-  background-size: 100% auto;
+  background: url('../assets/tile-woven.jpg') repeat;   /* js/main.js rotates the three tile prints each visit */
+  /* tiles are scaled up so roughly three show across the ribbon (js sets a
+     per-pattern width) instead of the whole compressed sheet */
+  background-size: 233% auto;
   opacity: .34;
   mix-blend-mode: multiply;
   pointer-events: none;
@@ -109,12 +111,85 @@ a { color: inherit; }
   padding-top: .7rem;
   padding-bottom: .7rem;
 }
+/* On the landing page the print runs to the top edge, so the transparent
+   header sits on artwork. A paper scrim fades the ink out behind the links;
+   it disappears once the solid header takes over on scroll. */
+.nav::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 9rem;
+  background: linear-gradient(to bottom,
+    rgba(245, 243, 234, .97) 0%,
+    rgba(245, 243, 234, .72) 42%,
+    rgba(245, 243, 234, 0) 100%);
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity .35s ease;
+}
+.nav.scrolled::before { opacity: 0; }
 .nav-brand {
   font-family: var(--font-display);
   font-size: 1.35rem;
+  line-height: .98;
+  padding-block: .45rem;      /* keeps the header height as the line-height tightens */
   text-decoration: none;
   letter-spacing: .01em;
   white-space: nowrap;
+  /* stays out of the header until the hero title has lifted up into it */
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+.nav.brand-on .nav-brand { opacity: 1; }
+/* The hero title itself becomes the brand, so the hand-off is instant. */
+body.title-morph .nav-brand { transition: none; }
+/* inline-block so each word's box matches the flying copy, making the
+   hand-off at the end of the animation pixel-for-pixel */
+.nav-brand .nb { display: inline-block; }
+
+/* ------------------------------------------------------------
+   The flying hero title
+   A fixed copy of the hero <h1>; scroll drives each word from its
+   place on the sheet to its place in the header, the outlined
+   "Printing Press" inking itself solid on the way.
+   ------------------------------------------------------------ */
+.title-fly {
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 60;
+  display: none;
+  pointer-events: none;
+  visibility: hidden;        /* switched on by js once measured */
+}
+body.title-morph .title-fly { display: block; }
+body.title-morph .hero-text h1 { opacity: 0; }   /* the fly renders the title */
+/* The drop-down menu must sit above the flying title, so fold it away. */
+.nav.menu-open ~ .title-fly { display: none; }
+
+.tf {
+  position: absolute;
+  left: 0; top: 0;
+  transform-origin: 0 0;
+  white-space: nowrap;
+  display: block;
+  line-height: .98;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.tf-soho {
+  font-family: var(--font-display);
+  font-size: clamp(3.4rem, 7.2vw, 6.4rem);
+  letter-spacing: .01em;
+}
+.tf-press-outline {
+  font-family: var(--font-outline);
+  font-size: clamp(2.6rem, 5.4vw, 4.9rem);
+}
+.tf-press-solid {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 5.4vw, 4.9rem);
+  letter-spacing: .01em;
+  opacity: 0;
 }
 .nav-links { display: flex; gap: clamp(1.2rem, 3vw, 2.6rem); }
 .nav-links a {
@@ -138,6 +213,9 @@ a { color: inherit; }
   transition: transform .3s ease;
 }
 .nav-links a:hover::after { transform: scaleX(1); transform-origin: left; }
+
+/* The hamburger stays folded away on wide screens */
+.hamburger { display: none; }
 
 /* ------------------------------------------------------------
    Shared type
@@ -200,10 +278,12 @@ h2 em { font-style: italic; color: var(--teal); }
   white-space: nowrap;
 }
 
+/* Anchored to .hero, whose 10vh bottom buffer needs compensating for,
+   so the cue lands just above the fold line */
 .scroll-cue {
   position: absolute;
   left: clamp(1.6rem, 4.5vw, 5rem);
-  bottom: clamp(1.6rem, 5vh, 3rem);
+  bottom: calc(clamp(1.6rem, 5vh, 3rem) + 10vh);
   display: flex;
   align-items: center;
   gap: .9rem;
@@ -569,6 +649,68 @@ h2 em { font-style: italic; color: var(--teal); }
 }
 
 /* ------------------------------------------------------------
+   Media page — press, interviews and films
+   ------------------------------------------------------------ */
+.media {
+  position: relative;
+  z-index: 2;
+  max-width: 1180px;
+  padding: clamp(7rem, 13vh, 9.5rem) clamp(1.6rem, 6vw, 6rem) clamp(4.5rem, 9vh, 7rem);
+}
+.media-head { max-width: 62ch; margin-bottom: clamp(2.6rem, 6vh, 4rem); }
+.media-head h2 { margin-bottom: .8rem; }
+.media-intro { color: var(--ink-soft); margin: 0; }
+
+.media-group { margin-bottom: clamp(2.6rem, 6vh, 4rem); }
+.media-group h3 {
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.1;
+  margin: 0 0 1.1rem;
+  padding-bottom: .6rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.media-list { list-style: none; margin: 0; padding: 0; }
+.media-item { border-bottom: 1px solid var(--line-soft); }
+.media-item a {
+  display: grid;
+  grid-template-columns: minmax(0, 10rem) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: .25rem 1.5rem;
+  padding: .95rem .3rem;
+  text-decoration: none;
+  color: inherit;
+  transition: background .25s ease, padding-left .3s cubic-bezier(.2, .7, .2, 1);
+}
+.media-item a:hover { background: var(--paper-deep); padding-left: .8rem; }
+.media-src {
+  font-family: var(--font-label);
+  font-size: .64rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+.media-title { font-family: var(--font-display); font-size: 1.08rem; line-height: 1.3; }
+.media-play { color: var(--rust); font-size: .68em; margin-right: .55rem; vertical-align: .08em; }
+.media-meta {
+  font-family: var(--font-label);
+  font-size: .64rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  text-align: right;
+}
+.media-arrow { display: inline-block; margin-left: .5rem; transition: transform .25s ease, color .25s ease; }
+.media-item a:hover .media-arrow { transform: translate(2px, -2px); color: var(--rust); }
+
+@media (max-width: 680px) {
+  .media-item a { grid-template-columns: minmax(0, 1fr) auto; }
+  .media-src { grid-column: 1 / -1; }
+  .media-title { font-size: 1rem; }
+}
+
+/* ------------------------------------------------------------
    Scroll reveals
    ------------------------------------------------------------ */
 .reveal {
@@ -606,22 +748,73 @@ h2 em { font-style: italic; color: var(--teal); }
 }
 
 @media (max-width: 860px) {
+  /* hamburger replaces the section links; the menu drops open under it */
+  .hamburger {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: 0;
+    padding: .4rem 0;
+    cursor: pointer;
+  }
+  .hamburger span {
+    display: block;
+    width: 22px;
+    height: 1.5px;
+    background: var(--ink);
+    transition: transform .35s ease, opacity .25s ease;
+  }
+  #nav.menu-open .hamburger span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+  #nav.menu-open .hamburger span:nth-child(2) { opacity: 0; }
+  #nav.menu-open .hamburger span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    right: clamp(1.4rem, 4vw, 3.2rem);
+    flex-direction: column;
+    gap: 1.15rem;
+    background: var(--paper);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    box-shadow: 0 14px 34px rgba(43, 41, 33, .16);
+    padding: 1rem 1.4rem;
+    opacity: 0;
+    transform: translateY(-.45rem);
+    pointer-events: none;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  .nav.menu-open .nav-links {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 860px) {
   /* Hero: tighter to the header, and the print is pulled up behind the
      tagline, dissolving in from its top edge instead of its left. */
   .hero { grid-template-columns: 1fr; min-height: 0; padding-bottom: 5vh; }
   .hero-text { padding-top: 5rem; padding-bottom: 0; z-index: 2; }
   .tagline { white-space: normal; }   /* one line on desktop, wraps on small screens */
+  /* the cue drops below the risen print, near the bottom of the screen,
+     reading as a paper 'bubble' once the living print has loaded */
   .scroll-cue {
     position: relative;
     left: auto; bottom: auto;
     margin-top: 1.5rem;
-    align-self: flex-start;
-    background: var(--paper);         /* sits on top of the risen print */
+    justify-self: start;
+    background: var(--paper);         /* sits below the risen print */
     border: 1px solid var(--line-soft);
     border-radius: 999px;
     padding: .5rem .95rem;
     box-shadow: 0 1px 0 var(--line-soft);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .8s ease .3s, visibility .8s;
   }
+  .hero.art-loaded .scroll-cue { opacity: 1; visibility: visible; }
   .hero-art {
     justify-content: center;
     padding: 0 1.2rem;

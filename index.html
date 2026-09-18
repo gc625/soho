@@ -11,10 +11,14 @@
 <body>
 
 <header class="nav" id="nav">
-  <a class="nav-brand" href="#top">Soho Printing Press</a>
-  <nav class="nav-links" aria-label="Sections">
+  <a class="nav-brand" href="#top"><span class="nb nb-soho">Soho</span> <span class="nb nb-press">Printing&nbsp;Press</span></a>
+  <button class="hamburger" id="hamburger" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+    <span></span><span></span><span></span>
+  </button>
+  <nav class="nav-links" id="nav-links" aria-label="Sections">
     <a href="#about">About</a>
     <a href="#listings">Listings</a>
+    <a href="media.html">Media</a>
     <a href="#contact">Contact</a>
   </nav>
 </header>
@@ -32,10 +36,6 @@
         <span class="h1-outline">Printing&nbsp;Press</span>
       </h1>
       <p class="tagline">Classic Hong Kong properties for a modern lifestyle.</p>
-      <a class="scroll-cue" href="#about" aria-label="Scroll down to learn more">
-        <span>Scroll</span>
-        <i class="cue-line" aria-hidden="true"></i>
-      </a>
     </div>
     <div class="hero-art">
       <div class="print-frame">
@@ -43,6 +43,10 @@
                 title="Gage Street — a living print" scrolling="no" tabindex="-1"></iframe>
       </div>
     </div>
+    <a class="scroll-cue" href="#about" aria-label="Scroll down to learn more">
+      <span>Scroll</span>
+      <i class="cue-line" aria-hidden="true"></i>
+    </a>
   </section>
 
   <!-- ============ ABOUT ============ -->
@@ -123,6 +127,14 @@
   <img id="lb-img" alt="">
   <button class="lb-next" type="button" aria-label="Next photo">&#8250;</button>
   <p class="lb-count" id="lb-count"></p>
+</div>
+
+<!-- A loose copy of the hero title: it is driven by scroll so the real title
+     appears to lift off the sheet and land in the header. -->
+<div class="title-fly" id="title-fly" aria-hidden="true">
+  <span class="tf tf-soho">Soho</span>
+  <span class="tf tf-press-outline">Printing&nbsp;Press</span>
+  <span class="tf tf-press-solid">Printing&nbsp;Press</span>
 </div>
 
 <script src="js/main.js"></script>

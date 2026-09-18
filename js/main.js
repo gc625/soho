@@ -85,10 +85,13 @@ const photoSrc = (listing, n) =>
    so each visit presses a different margin. Starts at random,
    then rotates so consecutive visits never repeat.
    ------------------------------------------------------------ */
+/* Each pattern's sheet holds a different number of tiles across it — woven
+   ~7, floral ~8, square ~4 — so each gets its own background-size that puts
+   roughly three tiles across the ribbon instead of the whole sheet. */
 const RIBBON_TILES = [
-  'assets/tile-woven.jpg',
-  'assets/tile-floral.jpg',
-  'assets/tile-square.jpg'
+  { src: 'assets/tile-woven.jpg',  size: '233% auto' },
+  { src: 'assets/tile-floral.jpg', size: '267% auto' },
+  { src: 'assets/tile-square.jpg', size: '133% auto' }
 ];
 try {
   const last = localStorage.getItem('spp-ribbon');
@@ -96,8 +99,17 @@ try {
     ? Math.floor(Math.random() * RIBBON_TILES.length)
     : (Number(last) + 1) % RIBBON_TILES.length;
   localStorage.setItem('spp-ribbon', String(idx));
-  document.querySelector('.ribbon').style.backgroundImage = `url('${RIBBON_TILES[idx]}')`;
+  const ribbon = document.querySelector('.ribbon');
+  ribbon.style.backgroundImage = `url('${RIBBON_TILES[idx].src}')`;
+  ribbon.style.backgroundSize = RIBBON_TILES[idx].size;
 } catch { /* storage unavailable — keep the default woven ribbon */ }
+
+/* ------------------------------------------------------------
+   Mobile hero: the scroll 'bubble' stays hidden until the living
+   print has loaded, so it never floats over an empty frame
+   ------------------------------------------------------------ */
+document.getElementById('hero-print').addEventListener('load', () =>
+  document.querySelector('.hero').classList.add('art-loaded'));
 
 /* ------------------------------------------------------------
    Scroll reveals
@@ -279,14 +291,174 @@ document.addEventListener('keydown', e => {
    Nav: solid after the fold, hides scrolling down, returns on scroll up
    ------------------------------------------------------------ */
 const nav = document.getElementById('nav');
+const heroTitle = document.querySelector('.hero-text h1');
+const hamburger = document.getElementById('hamburger');
+
+/* ------------------------------------------------------------
+   The hero title lifts off the sheet and lands in the header.
+   A fixed copy of the title (the "fly") is driven by scroll: it
+   starts exactly over the real title, and as that title nears the
+   top the outlined "Printing Press" rises to sit beside "Soho",
+   inks in solid black, and everything shrinks to header size —
+   then the real brand in the nav takes over, pixel-for-pixel.
+   ------------------------------------------------------------ */
+const fly = document.getElementById('title-fly');
+const tfSoho = fly.querySelector('.tf-soho');
+const tfOutline = fly.querySelector('.tf-press-outline');
+const tfSolid = fly.querySelector('.tf-press-solid');
+const h1Soho = document.querySelector('.h1-solid');
+const h1Press = document.querySelector('.h1-outline');
+const nbSoho = document.querySelector('.nb-soho');
+const nbPress = document.querySelector('.nb-press');
+
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+
+let morphOn = false;
+let natSoho, natPress, natSolid;        // fly boxes at hero size
+let sohoLeft, sohoDocTop, pressLeft, pressDocTop;
+let morphStart = 0, morphEnd = 0, morphDist = 1;
+
+/* Measure once per layout change: the fly's natural boxes, the hero
+   lines' document positions, and the header's landing line. */
+function measureMorph() {
+  const units = [tfSoho, tfOutline, tfSolid];
+  const saved = units.map(el => el.style.transform);
+  units.forEach(el => { el.style.transform = 'none'; });
+
+  const rs = tfSoho.getBoundingClientRect();
+  const rp = tfOutline.getBoundingClientRect();
+  const rl = tfSolid.getBoundingClientRect();
+  natSoho = { w: rs.width, h: rs.height };
+  natPress = { w: rp.width, h: rp.height };
+  natSolid = { w: rl.width, h: rl.height };
+
+  units.forEach((el, i) => { el.style.transform = saved[i]; });
+
+  const hs = h1Soho.getBoundingClientRect();
+  const hp = h1Press.getBoundingClientRect();
+  sohoLeft = hs.left;   sohoDocTop = hs.top + scrollY;
+  pressLeft = hp.left;  pressDocTop = hp.top + scrollY;
+
+  /* Measure the landing line with the header revealed, so a resize while
+     the nav is scrolled away doesn't fold a negative value into the maths. */
+  const wasHidden = nav.classList.contains('hidden');
+  if (wasHidden) { nav.style.transition = 'none'; nav.classList.remove('hidden'); }
+  const brandTop = nbSoho.getBoundingClientRect().top;
+  if (wasHidden) {
+    nav.classList.add('hidden');
+    void nav.offsetHeight;
+    nav.style.transition = '';
+  }
+  morphEnd = sohoDocTop - brandTop;            // natural reach of the line
+  const startTop = Math.min(innerHeight * 0.34, sohoDocTop - 80);
+  /* Keep the whole morph safely between page top and the landing line,
+     so a short (mobile) hero never starts the animation mid-flight. */
+  morphStart = Math.max(0, Math.min(sohoDocTop - startTop, morphEnd - 60));
+  morphDist = Math.max(1, morphEnd - morphStart);
+}
+
+/* Interpolate a fly word from its sheet box (sx,sy,sw,sh) to its
+   header box (tx,ty,tw,th). Size and position carry separate
+   progress values so the outlined line can wait on the second row
+   until "Soho" has shrunk out of its way. */
+function place(el, sx, sy, sw, sh, tx, ty, tw, th, pSize, pPos) {
+  const x = sx + (tx - sx) * pPos;
+  const y = sy + (ty - sy) * pPos;
+  const w = sw + (tw - sw) * pSize;
+  const h = sh + (th - sh) * pSize;
+  el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${w / sw}, ${h / sh})`;
+}
+
+function updateMorph() {
+  const y = scrollY;
+  const p = clamp01((y - morphStart) / morphDist);
+  const eff = Math.min(y, morphEnd);          // frozen once the title is home
+
+  /* The second line waits until "Soho" has narrowed, then rises into
+     place; both lines shrink together. */
+  const pSohoPos = p;
+  const pPressPos = clamp01((p - 0.4) / 0.6);
+
+  const tS = nbSoho.getBoundingClientRect();
+  const tP = nbPress.getBoundingClientRect();
+
+  place(tfSoho, sohoLeft, sohoDocTop - eff, natSoho.w, natSoho.h,
+        tS.left, tS.top, tS.width, tS.height, p, pSohoPos);
+  place(tfOutline, pressLeft, pressDocTop - eff, natPress.w, natPress.h,
+        tP.left, tP.top, tP.width, tP.height, p, pPressPos);
+  place(tfSolid, pressLeft, pressDocTop - eff, natSolid.w, natSolid.h,
+        tP.left, tP.top, tP.width, tP.height, p, pPressPos);
+
+  const ink = clamp01((p - 0.6) / 0.4);        // outline inks in solid
+  tfOutline.style.opacity = String(1 - ink);
+  tfSolid.style.opacity = String(ink);
+
+  const landed = p >= 1;
+  nav.classList.toggle('brand-on', landed);
+  fly.style.visibility = landed ? 'hidden' : 'visible';
+}
+
+/* Fallback (reduced motion / no fonts API): fade the brand in as before. */
+function updateBrandFallback() {
+  nav.classList.toggle('brand-on',
+    heroTitle.getBoundingClientRect().top <= nav.offsetHeight);
+}
+
+function enableMorph() {
+  if (morphOn || reduceMotion) return;
+  morphOn = true;
+  document.body.classList.add('title-morph');
+  measureMorph();
+  updateMorph();
+}
+
+if (!reduceMotion) {
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(enableMorph);
+    setTimeout(enableMorph, 1500);             // in case fonts.ready stalls
+  } else {
+    enableMorph();
+  }
+}
+
 let lastY = window.scrollY;
 window.addEventListener('scroll', () => {
   const y = window.scrollY;
   nav.classList.toggle('scrolled', y > 30);
-  if (y > 140 && y > lastY) nav.classList.add('hidden');
+  /* Keep the header on screen until the title has fully landed in it. */
+  const pastMorph = !morphOn || y > morphEnd;
+  if (pastMorph && y > 140 && y > lastY) nav.classList.add('hidden');
   else nav.classList.remove('hidden');
+  if (morphOn) updateMorph(); else updateBrandFallback();
   lastY = y;
 }, { passive: true });
+
+let morphResize;
+window.addEventListener('resize', () => {
+  clearTimeout(morphResize);
+  morphResize = setTimeout(() => {
+    if (morphOn) { measureMorph(); updateMorph(); }
+  }, 160);
+});
+
+if (!morphOn) updateBrandFallback();
+
+/* Hamburger: opens and closes the drop-down menu */
+function closeMenu() {
+  nav.classList.remove('menu-open');
+  hamburger.setAttribute('aria-expanded', 'false');
+}
+hamburger.addEventListener('click', () => {
+  const open = nav.classList.toggle('menu-open');
+  hamburger.setAttribute('aria-expanded', String(open));
+});
+nav.querySelectorAll('.nav-links a').forEach(a =>
+  a.addEventListener('click', closeMenu));
+document.addEventListener('click', e => {
+  if (nav.classList.contains('menu-open') && !e.target.closest('#nav'))
+    closeMenu();
+});
 
 /* ------------------------------------------------------------
    Initial reveals + footer year
