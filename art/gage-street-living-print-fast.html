@@ -45,15 +45,22 @@ function createScene(make,images,W=1000){
    ctx.restore();
   });
  }
+ /* The build: five deliberate press passes, not a loading bar. Each pass
+    sweeps top to bottom with an eased start and stop, holds a beat so the
+    new colour can be read, then the next colour is pressed on. A soft ink
+    line rides the leading edge of each sweep, like a squeegee passing. */
+ const easeInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+ const INTRO=3.55,DWELL0=.45,WIPE=.5,GAP=.12;
  function draw(seconds){
-  const t=seconds*4.67;
-  if(seconds<1.5){
-   if(t<.35){ctx.drawImage(images[0],0,0,W,H);return;}
-   const progress=(t-.35)/1.33,index=Math.min(4,Math.floor(progress)),f=smooth(progress-index);
+  if(seconds<INTRO){
+   if(seconds<DWELL0){ctx.drawImage(images[0],0,0,W,H);return;}
+   const t=seconds-DWELL0,span=WIPE+GAP,index=Math.min(4,Math.floor(t/span)),phase=t-index*span;
+   const f=phase<WIPE?easeInOut(phase/WIPE):1;
    ctx.drawImage(images[index],0,0,W,H);
-   // Each colour is transferred in one steady press pass, top to bottom.
-   const y=Math.round(f*H);if(y>0){ctx.save();ctx.beginPath();ctx.rect(0,0,W,y);ctx.clip();ctx.drawImage(images[index+1],0,0,W,H);ctx.restore();}
-  }else living(seconds-1.5,smooth((seconds-1.5)/1.5));
+   const y=Math.round(f*H);
+   if(y>0){ctx.save();ctx.beginPath();ctx.rect(0,0,W,y);ctx.clip();ctx.drawImage(images[index+1],0,0,W,H);ctx.restore();}
+   if(phase<WIPE&&y>4&&y<H-2){ctx.save();ctx.globalAlpha=.22*Math.sin(Math.PI*f);ctx.fillStyle='#2b2921';ctx.fillRect(0,y-3,W,5);ctx.restore();}
+  }else living(seconds-INTRO,smooth((seconds-INTRO)/1.5));
  }
  return {canvas,draw,living,still};
 }

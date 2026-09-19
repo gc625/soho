@@ -459,8 +459,7 @@ function place(el, sx, sy, sw, sh, tx, ty, tw, th, pSize, pPos) {
   el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${w / sw}, ${h / sh})`;
 }
 
-function updateMorph() {
-  const y = scrollY;
+function updateMorph(y) {
   const p = clamp01((y - morphStart) / morphDist);
   const eff = Math.min(y, morphEnd);          // frozen once the title is home
 
@@ -499,7 +498,34 @@ function enableMorph() {
   morphOn = true;
   document.body.classList.add('title-morph');
   measureMorph();
-  updateMorph();
+  flyY = window.scrollY;
+  updateMorph(flyY);
+}
+
+/* Mobile browsers scroll on the compositor and deliver scroll events to
+   the main thread in coarse bursts, so driving the fly straight from
+   scroll events steps at event rate — the "low fps" look. Instead a rAF
+   loop chases a smoothed scroll position, so the fly glides between
+   events and eases into its landing. */
+let flyY = null;
+let morphRaf = 0;
+let lastScrollAt = 0;
+
+function morphLoop() {
+  morphRaf = 0;
+  const target = window.scrollY;
+  if (flyY === null) flyY = target;
+  const d = target - flyY;
+  flyY = Math.abs(d) < 0.1 ? target : flyY + d * 0.25;
+  updateMorph(flyY);
+  /* Keep rendering while the user is still scrolling or the fly is
+     still settling; stop when both are quiet. */
+  if (flyY !== target || performance.now() - lastScrollAt < 160)
+    morphRaf = requestAnimationFrame(morphLoop);
+}
+
+function scheduleMorph() {
+  if (!morphRaf) morphRaf = requestAnimationFrame(morphLoop);
 }
 
 if (!reduceMotion) {
@@ -520,7 +546,8 @@ function onScroll() {
   const pastMorph = !morphOn || y > morphEnd;
   if (pastMorph && y > 140 && y > lastY) nav.classList.add('hidden');
   else nav.classList.remove('hidden');
-  if (morphOn) updateMorph(); else updateBrandFallback();
+  lastScrollAt = performance.now();
+  if (morphOn) scheduleMorph(); else updateBrandFallback();
   lastY = y;
 }
 /* Coalesce scroll events into one update per frame. */
@@ -537,7 +564,7 @@ let morphResize;
 window.addEventListener('resize', () => {
   clearTimeout(morphResize);
   morphResize = setTimeout(() => {
-    if (morphOn) { measureMorph(); updateMorph(); }
+    if (morphOn) { measureMorph(); flyY = window.scrollY; updateMorph(flyY); }
   }, 160);
 });
 

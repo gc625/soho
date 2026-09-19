@@ -619,8 +619,10 @@ h2 em { font-style: italic; color: var(--teal); }
 }
 .lightbox.open { display: flex; }
 .lightbox img {
-  max-width: 88vw;
+  /* Fill the screen: the photos are 533:300, so 149.3vh wide == 84vh tall. */
+  width: min(88vw, 149.3vh);
   max-height: 84vh;
+  object-fit: contain;
   box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
 }
 .lb-close, .lb-prev, .lb-next {
