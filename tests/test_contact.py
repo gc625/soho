@@ -39,7 +39,7 @@ class TestContactInformation(unittest.TestCase):
         for page in ('index.html', 'media.html'):
             with self.subTest(page=page):
                 text = (ROOT / page).read_text(encoding='utf-8')
-                self.assertIn('Mee Lun Street, Sheung Wan, HK', text)
+                self.assertIn('Shop B, 4 Mee Lun Street, Sheung Wan, Hong Kong Island', text)
                 self.assertNotIn('Tank Lane Shop House', text)
 
 
