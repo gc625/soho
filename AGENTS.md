@@ -1,7 +1,10 @@
 # AGENTS.md — Soho Printing Press
 
 Static site (no build step, no dependencies) for a Hong Kong property portfolio.
-Deployed via **GitHub Pages** from `main` at https://gc625.github.io/soho/.
+Deployed via **Cloudflare Workers static assets** — push to `main` auto-deploys to
+https://sohoprintingpress.com (worker `soho`; preview URL https://soho.sohopresshk.workers.dev).
+Deploy config: `wrangler.jsonc` (serves repo root as assets; exclusions in `.assetsignore`).
+Staging: https://gc625.github.io/soho/ (GitHub Pages, same branch).
 Plain HTML/CSS/JS: `index.html`, `media.html`, `css/style.css`, `js/main.js`.
 
 ## Project layout
