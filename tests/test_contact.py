@@ -35,6 +35,13 @@ class TestContactInformation(unittest.TestCase):
                 self.assertIn(('mailto:smartoplimited@gmail.com', 'smartoplimited@gmail.com'), parser.links)
                 self.assertIn(('tel:+85260157050', '+852 6015 7050'), parser.links)
 
+    def test_address_on_each_page(self):
+        for page in ('index.html', 'media.html'):
+            with self.subTest(page=page):
+                text = (ROOT / page).read_text(encoding='utf-8')
+                self.assertIn('Mee Lun Street, Sheung Wan, HK', text)
+                self.assertNotIn('Tank Lane Shop House', text)
+
 
 if __name__ == '__main__':
     unittest.main()
