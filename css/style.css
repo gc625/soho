@@ -60,6 +60,12 @@ main { position: relative; }
 img { display: block; max-width: 100%; }
 a { color: inherit; }
 
+/* Let text and replaced elements shrink inside flex/grid tracks. */
+.hero-text, .hero-art, .viewer, .viewer-prose, .viewer-head, .viewer-body,
+.viewer-map, .gallery-item, .card, .media-item a > * { min-width: 0; }
+h2, h3, p, .chips li, .card-body, .media-src, .media-title,
+.footer-contact a { overflow-wrap: anywhere; }
+
 ::selection { background: var(--sage); color: var(--paper); }
 
 /* ------------------------------------------------------------
@@ -275,18 +281,20 @@ h2 em { font-style: italic; color: var(--teal); }
   font-style: italic;
   color: var(--ink-soft);
   margin: 1.8rem 0 0;
-  white-space: nowrap;
 }
 
-/* Anchored to .hero, whose 10vh bottom buffer needs compensating for,
-   so the cue lands just above the fold line */
+/* A centered downward cue marks the transition to the next section. */
 .scroll-cue {
   position: absolute;
-  left: clamp(1.6rem, 4.5vw, 5rem);
-  bottom: calc(clamp(1.6rem, 5vh, 3rem) + 10vh);
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(1.5rem + 10vh);
+  z-index: 3;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: .9rem;
+  gap: .5rem;
+  padding: .5rem 1rem;
   text-decoration: none;
   font-family: var(--font-label);
   font-size: .68rem;
@@ -294,23 +302,14 @@ h2 em { font-style: italic; color: var(--teal); }
   text-transform: uppercase;
   color: var(--ink-soft);
 }
-.cue-line {
-  width: 54px; height: 1px;
-  background: var(--ink-soft);
-  position: relative;
-  overflow: hidden;
-}
-.cue-line::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--paper);
+.scroll-cue:focus-visible { outline: 1px solid var(--teal); outline-offset: 4px; }
+.cue-arrow {
+  display: block;
   animation: cue 2.2s cubic-bezier(.65, 0, .35, 1) infinite;
 }
 @keyframes cue {
-  0%   { transform: translateX(-100%); }
-  55%  { transform: translateX(0); }
-  100% { transform: translateX(102%); }
+  0%, 100% { transform: translateY(0); }
+  55% { transform: translateY(7px); }
 }
 
 /* The living print sits directly on the sheet, unframed,
@@ -339,23 +338,39 @@ h2 em { font-style: italic; color: var(--teal); }
    About
    ------------------------------------------------------------ */
 .about {
+  display: grid;
+  /* Image track sized to the image, copy track sized to its measure; the
+     leftover space becomes the gap so neither column leaves a dead hole. */
+  grid-template-columns: minmax(0, 27.5rem) minmax(0, 38.75rem);
+  justify-content: space-between;
+  column-gap: clamp(2rem, 4vw, 4.5rem);
+  /* The photo is far taller than the copy: align to the top so the heading
+     sits flush with the image rather than floating mid-column. */
+  align-items: start;
   position: relative;
   overflow: hidden;
   padding: clamp(7.5rem, 17vh, 11.5rem) clamp(1.6rem, 6vw, 6rem);
   z-index: 2;
 }
 .about-photo {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: min(38vw, 520px);
-  aspect-ratio: 508 / 695;
-  background: url('../assets/salvaging-tiles.jpg') center / cover;
-  mix-blend-mode: multiply;
-  pointer-events: none;
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
 }
-.about-inner { max-width: 620px; position: relative; }
+.about-photo img { width: 100%; height: auto; }
+.about-photo figcaption {
+  margin-top: .8rem;
+  padding-top: .65rem;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-label);
+  font-size: .65rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.about-inner { grid-column: 2; min-width: 0; max-width: 620px; position: relative; }
 .about-inner p { margin: 0 0 1.3rem; color: var(--ink-soft); }
 .about-inner p strong { color: var(--ink); }
 
@@ -374,25 +389,37 @@ h2 em { font-style: italic; color: var(--teal); }
 .viewer.swap { opacity: 0; }
 
 .viewer-prose { position: relative; }
-
-/* The illustrated map lives on the same layer as the text,
-   dissolved into the paper to the right of the description. */
-.viewer-map {
-  position: absolute;
-  top: -3rem; bottom: -2rem;
-  left: 47%; right: -2.5rem;
-  opacity: 0;
-  transition: opacity 1.4s ease;
-  pointer-events: none;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22%);
-  mask-image: linear-gradient(to right, transparent 0%, #000 22%);
+.viewer.has-map .viewer-prose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: 'head map' 'body map';
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(1.5rem, 3vw, 3rem);
 }
-.viewer-map.on { opacity: .55; }
+.viewer-head { grid-area: head; }
+.viewer-body { grid-area: body; }
+
+/* Only the transparent edge extends into the text track; the detailed
+   part of the map stays clear of the copy. The fade is kept short so the
+   map meets the paper as a printed edge rather than a long wash. */
+.viewer-map {
+  --map-bleed: clamp(2.5rem, 5.5vw, 5rem);
+  grid-area: map;
+  align-self: center;
+  width: calc(100% + var(--map-bleed));
+  margin-left: calc(-1 * var(--map-bleed));
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, .6) 9%, #000 18%);
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, .6) 9%, #000 18%);
+  opacity: 0;
+  transition: opacity .5s cubic-bezier(.2, .7, .2, 1);
+  pointer-events: none;
+}
+.viewer-map[hidden] { display: none; }
+.viewer-map.on { opacity: .92; }
 .viewer-map iframe {
-  position: absolute;
-  top: 46%; left: 0;
-  transform: translateY(-50%);
+  display: block;
   width: 100%;
+  height: auto;
   aspect-ratio: 1600 / 1000;
   border: 0;
   mix-blend-mode: multiply;
@@ -409,7 +436,7 @@ h2 em { font-style: italic; color: var(--teal); }
   font-size: clamp(2.1rem, 3.6vw, 3rem);
   line-height: 1.08;
 }
-.viewer-nav { display: flex; align-items: center; gap: .7rem; }
+.viewer-nav { display: flex; flex: 0 0 auto; align-items: center; gap: .7rem; }
 .vnav-btn {
   width: 2.35rem; height: 2.35rem;
   border-radius: 50%;
@@ -437,7 +464,7 @@ h2 em { font-style: italic; color: var(--teal); }
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-top: clamp(2.2rem, 5vh, 3.4rem);
 }
@@ -485,6 +512,7 @@ h2 em { font-style: italic; color: var(--teal); }
   margin: 1.1rem 0 0;
 }
 .chips li {
+  max-width: 100%;
   font-family: var(--font-label);
   font-size: .68rem;
   letter-spacing: .14em;
@@ -514,7 +542,7 @@ h2 em { font-style: italic; color: var(--teal); }
 /* Cards */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr));
   gap: clamp(.9rem, 1.6vw, 1.4rem);
 }
 .card {
@@ -584,6 +612,8 @@ h2 em { font-style: italic; color: var(--teal); }
   margin-bottom: 2.6rem;
 }
 .footer-contact a {
+  min-width: 0;
+  max-width: 100%;
   font-family: var(--font-display);
   font-size: clamp(1.25rem, 2.6vw, 1.8rem);
   text-decoration: none;
@@ -725,25 +755,16 @@ h2 em { font-style: italic; color: var(--teal); }
 /* ------------------------------------------------------------
    Responsive
    ------------------------------------------------------------ */
-@media (max-width: 1000px) {
-  /* the map drops below the description as a simple block on small screens */
+@media (max-width: 1100px) {
+  /* Portrait tablets need a full-width description and map. */
+  .viewer.has-map .viewer-prose { display: block; }
   .viewer-map {
-    position: relative;
-    inset: auto;
+    --map-bleed: 0px;
     margin-top: 2rem;
+    /* The map has its own row here — nothing to blend into, so no fade. */
     -webkit-mask-image: none;
     mask-image: none;
   }
-  .viewer-map.on { opacity: 1; }
-  .viewer-map iframe {
-    position: static;
-    transform: none;
-    width: 100%;
-    border: 1px solid var(--line-soft);
-  }
-}
-
-@media (max-width: 1000px) {
   :root { --ribbon-w: 0px; }   /* selvedge folds away on small screens */
   .ribbon { display: none; }
   .nav { left: 0; }
@@ -794,29 +815,19 @@ h2 em { font-style: italic; color: var(--teal); }
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1100px) {
   /* Hero: tighter to the header, and the print is pulled up behind the
      tagline, dissolving in from its top edge instead of its left. */
   .hero { grid-template-columns: 1fr; min-height: 0; padding-bottom: 5vh; }
   .hero-text { padding-top: 5rem; padding-bottom: 0; z-index: 2; }
-  .tagline { white-space: normal; }   /* one line on desktop, wraps on small screens */
-  /* the cue drops below the risen print, near the bottom of the screen,
-     reading as a paper 'bubble' once the living print has loaded */
+  /* Keep the cue centered directly after the artwork on touch screens. */
   .scroll-cue {
     position: relative;
     left: auto; bottom: auto;
-    margin-top: 1.5rem;
-    justify-self: start;
-    background: var(--paper);         /* sits below the risen print */
-    border: 1px solid var(--line-soft);
-    border-radius: 999px;
-    padding: .5rem .95rem;
-    box-shadow: 0 1px 0 var(--line-soft);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity .8s ease .3s, visibility .8s;
+    transform: none;
+    margin-top: 1rem;
+    justify-self: center;
   }
-  .hero.art-loaded .scroll-cue { opacity: 1; visibility: visible; }
   .hero-art {
     justify-content: center;
     padding: 0 1.2rem;
@@ -826,22 +837,25 @@ h2 em { font-style: italic; color: var(--teal); }
   }
   .print-frame {
     height: auto;
-    width: min(100%, 60vh);
+    width: min(100%, 46vh);
+    width: min(100%, 46svh);
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 16%);
     mask-image: linear-gradient(to bottom, transparent 0%, #000 16%);
   }
-  /* the about photo becomes an inline figure after the text on small screens */
-  .about-photo {
-    position: static;
-    transform: none;
-    width: min(100%, 420px);
-    margin: 2.4rem auto 0;
-  }
+}
 
+@media (max-width: 680px) {
+  .about { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+  .about-inner { grid-column: 1; }
+  .about-photo { grid-row: auto; max-width: 420px; }
+  .about { row-gap: 2.2rem; }
+}
+
+@media (max-width: 860px) {
   /* Listing viewer: arrows above the name, a swipeable photo strip above
-     the description, and the map as a faint backdrop behind the title. */
+     the description, then the complete map in its own row. */
   .viewer { display: flex; flex-direction: column; position: relative; }
-  .viewer-prose { display: contents; }
+  .viewer-prose, .viewer.has-map .viewer-prose { display: contents; }
   .viewer-head { order: 1; display: flex; flex-direction: column; }
   .viewer-title-row { display: contents; }
   .viewer-nav { order: -1; margin: 0 0 1.2rem; }
@@ -860,20 +874,8 @@ h2 em { font-style: italic; color: var(--teal); }
   .viewer-gallery::-webkit-scrollbar { display: none; }
   .gallery-item { flex: 0 0 86%; scroll-snap-align: center; }
   .viewer-map {
-    position: absolute;
-    top: -2.2rem; bottom: auto;
-    left: calc(-1 * clamp(1.6rem, 6vw, 6rem));
-    right: calc(-1 * clamp(1.6rem, 6vw, 6rem));
-    margin-top: 0;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 68%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 68%, transparent 100%);
-  }
-  .viewer-map.on { opacity: .4; }
-  .viewer-map iframe {
-    position: static;
-    transform: none;
+    order: 4;
     width: 100%;
-    border: 0;
   }
 }
 
@@ -891,6 +893,6 @@ h2 em { font-style: italic; color: var(--teal); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; transition: none; }
-  .cue-line::after { animation: none; }
+  .cue-arrow { animation: none; }
   .gallery-item img, .card-img img { transition: none; }
 }

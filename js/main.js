@@ -106,13 +106,6 @@ try {
 } catch { /* storage unavailable — keep the default woven ribbon */ }
 
 /* ------------------------------------------------------------
-   Mobile hero: the scroll 'bubble' stays hidden until the living
-   print has loaded, so it never floats over an empty frame
-   ------------------------------------------------------------ */
-document.getElementById('hero-print').addEventListener('load', () =>
-  document.querySelector('.hero').classList.add('art-loaded'));
-
-/* ------------------------------------------------------------
    Scroll reveals
    ------------------------------------------------------------ */
 const io = new IntersectionObserver(entries => {
@@ -164,6 +157,8 @@ if (initialMapSrc) mapCache.set(initialMapSrc, mapIframe);
 
 function syncMap() {
   const L = LISTINGS[current];
+  viewer.classList.toggle('has-map', Boolean(L.map));
+  mapLayer.hidden = !L.map;
   if (L.map) {
     let frame = mapCache.get(L.map);
     if (!frame) {
@@ -212,6 +207,7 @@ function buildGallery(listing) {
     galleryCache.set(listing.folder, nodes);
   }
   vGallery.replaceChildren(...nodes);
+  vGallery.scrollLeft = 0;
 }
 
 /* ------------------------------------------------------------
@@ -230,7 +226,7 @@ const queueOrder = () =>
 queueOrder();
 
 const ric = window.requestIdleCallback
-  || (cb => setTimeout(() => cb({ timeRemaining: () => 0, didTimeout: false }), 40));
+  || (cb => setTimeout(() => cb({ timeRemaining: () => 0, didTimeout: true }), 40));
 function pumpPreload(deadline) {
   /* Small batches per idle slice, and decode() each image explicitly —
      decoding off the main thread now means no decode storm mid-click

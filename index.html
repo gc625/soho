@@ -48,16 +48,17 @@
       </div>
     </div>
     <a class="scroll-cue" href="#about" aria-label="Scroll down to learn more">
-      <span>Scroll</span>
-      <i class="cue-line" aria-hidden="true"></i>
+      <span>Scroll down</span>
+      <svg class="cue-arrow" width="20" height="32" viewBox="0 0 20 32" fill="none" aria-hidden="true">
+        <path d="M10 2v26m-6-6 6 6 6-6" stroke="currentColor" stroke-width="1.25"/>
+      </svg>
     </a>
   </section>
 
   <!-- ============ ABOUT ============ -->
   <section class="about" id="about">
     <div class="about-inner">
-      <p class="eyebrow reveal">About Us</p>
-      <h2 class="reveal">Old buildings,<br><em>carefully re-inked.</em></h2>
+      <h2 class="reveal">About us</h2>
       <p class="reveal">Soho Printing Press is a small portfolio of classic Hong Kong homes — Tong Lau
         apartments and old shop houses — strung along the Central&ndash;Mid-Levels escalator, from
         Po Yan Street in Sheung Wan to Gage Street in the heart of Central.</p>
@@ -65,14 +66,17 @@
         as possible — salvaged tiles, exposed brick, worn timber — while quietly upgrading everything
         underneath to the standards of a modern lifestyle.</p>
     </div>
-    <div class="about-photo" aria-hidden="true"></div>
+    <figure class="about-photo reveal">
+      <img src="assets/salvaging-tiles.jpg" width="508" height="695" loading="lazy"
+           alt="Carefully lifting original floor tiles during a renovation">
+      <figcaption>Salvaging original tiles.</figcaption>
+    </figure>
   </section>
 
   <!-- ============ LISTINGS ============ -->
   <section class="listings" id="listings">
 
     <header class="section-head reveal">
-      <p class="eyebrow">The Portfolio</p>
       <h2>Listings</h2>
     </header>
 
@@ -94,7 +98,7 @@
         <div class="viewer-body reveal">
           <p id="viewer-desc"></p>
         </div>
-        <!-- Illustrated map dissolves in beside the description; one per listing, as they are drawn -->
+        <!-- The map's transparent left edge blends into the copy on desktop. -->
         <div class="viewer-map" id="viewer-map" aria-hidden="true">
           <iframe id="map-iframe" loading="lazy" src="art/maps/staunton-street-listing-map.html"
                   title="Illustrated location map" scrolling="no" tabindex="-1"></iframe>
